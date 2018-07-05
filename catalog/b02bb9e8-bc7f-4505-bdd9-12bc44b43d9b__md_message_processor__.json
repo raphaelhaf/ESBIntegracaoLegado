@@ -1,0 +1,11 @@
+{
+    "inputMessageMetadata": {},
+    "outputMessageMetadata": {
+        "messagePayload": {
+            "connectorName": "#_custom_mule_metadata_type_#",
+            "typeId": "matriculaResponse"
+        }
+    },
+    "id": "b02bb9e8-bc7f-4505-bdd9-12bc44b43d9b",
+    "version": "5.2.0.0"
+}

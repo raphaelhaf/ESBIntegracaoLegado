@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:ws="http://www.mulesoft.org/schema/mule/ws" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ws http://www.mulesoft.org/schema/mule/ws/current/mule-ws.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd">
+    <http:listener-config name="listener_integracao_matricula" host="0.0.0.0" port="8081" basePath="/bus" doc:name="HTTP Listener Configuration"/>
+    <ws:consumer-config name="ws_integracao_matricula_legado" wsdlLocation="http://localhost:52181/MatriculaService.svc?wsdl" service="MatriculaService" port="BasicHttpBinding_IMatriculaService" serviceAddress="http://localhost:52181/MatriculaService.svc" doc:name="Web Service Consumer"/>
+    <flow name="microservicospoc.barramento.integracao.legadoFlow">
+        <http:listener config-ref="listener_integracao_matricula" path="/integracao/matricula" allowedMethods="POST" doc:name="Integracao Legado Endpoint" metadata:id="3882ab28-bf1f-4083-b4c7-923675b47ee0"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/xml
+%namespace ns0 http://tempuri.org/
+%namespace ns1 http://schemas.datacontract.org/2004/07/IntegracaoLegado.WebService.Entities
+---
+{
+	ns0#IntegraMatricula: {
+		ns0#matricula: {
+			ns1#Ativo: payload.isAtivo,
+			ns1#Cpf: payload.cpf,
+			ns1#DataHora: payload.dataHora,
+			ns1#Id: payload.id,
+			ns1#IdUsuarioEmail: payload.idUsuarioEmail,
+			ns1#OrigemIntegracao: payload.origemIntegracao,
+			ns1#Ra: payload.ra
+		}
+	}
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <ws:consumer config-ref="ws_integracao_matricula_legado" operation="IntegraMatricula" doc:name="WS Integracao Matricula Legado"/>
+
+        <dw:transform-message doc:name="Transform Message" metadata:id="b02bb9e8-bc7f-4505-bdd9-12bc44b43d9b">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+%namespace ns0 http://tempuri.org/
+%namespace ns1 http://schemas.datacontract.org/2004/07/IntegracaoLegado.WebService.Response
+---
+{
+	cpf: payload.ns0#IntegraMatriculaResponse.ns0#IntegraMatriculaResult.ns1#Cpf,
+	dataHora: payload.ns0#IntegraMatriculaResponse.ns0#IntegraMatriculaResult.ns1#DataHora as :string,
+	id: payload.ns0#IntegraMatriculaResponse.ns0#IntegraMatriculaResult.ns1#Id,
+	idUsuarioEmail: payload.ns0#IntegraMatriculaResponse.ns0#IntegraMatriculaResult.ns1#IdUsuarioEmail,
+	isAtivo: payload.ns0#IntegraMatriculaResponse.ns0#IntegraMatriculaResult.ns1#Ativo,
+	mensagem: payload.ns0#IntegraMatriculaResponse.ns0#IntegraMatriculaResult.ns1#Mensagem,
+	origemIntegracao: payload.ns0#IntegraMatriculaResponse.ns0#IntegraMatriculaResult.ns1#OrigemIntegracao,
+	ra: payload.ns0#IntegraMatriculaResponse.ns0#IntegraMatriculaResult.ns1#Ra as :number
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <logger message="#[payload]" level="INFO" doc:name="Logger" metadata:id="1c1951a9-9948-4646-9d20-94e3f652c406"/>
+    </flow>
+</mule>
